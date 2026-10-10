@@ -147,6 +147,24 @@ describe("uninstall — telemetry consent preservation", () => {
     expect(telemetryMock.resetLocalTelemetryState).toHaveBeenCalledWith();
   });
 
+  it("uninstalls the global package with npm when launched by Yarn 2+, which has no `yarn global`", async () => {
+    process.env.npm_config_user_agent = "yarn/4.18.1 npm/? node/v22.0.0 linux x64";
+    process.chdir(tmpDir);
+
+    await uninstall(["--yes"]);
+
+    expect(childProcessMock.execFileSync).toHaveBeenCalledWith(
+      "npm",
+      expect.arrayContaining(["uninstall", "-g", "@swmansion/argent"]),
+      expect.any(Object)
+    );
+    expect(childProcessMock.execFileSync).not.toHaveBeenCalledWith(
+      "yarn",
+      expect.anything(),
+      expect.anything()
+    );
+  });
+
   it("drains queued uninstall telemetry before deleting the local telemetry id", async () => {
     process.chdir(tmpDir);
 

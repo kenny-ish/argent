@@ -37,6 +37,7 @@ import {
   copyDir,
   dirExists,
   detectPackageManager,
+  detectGlobalPackageManager,
   globalInstallCommand,
   globalUninstallCommand,
   formatShellCommand,
@@ -448,6 +449,38 @@ describe("detectPackageManager", () => {
   it("returns bun for bun agent", () => {
     process.env.npm_config_user_agent = "bun/1.0.0";
     expect(detectPackageManager()).toBe("bun");
+  });
+});
+
+// ── detectGlobalPackageManager ────────────────────────────────────────────────
+
+describe("detectGlobalPackageManager", () => {
+  const original = process.env.npm_config_user_agent;
+
+  afterEach(() => {
+    if (original === undefined) delete process.env.npm_config_user_agent;
+    else process.env.npm_config_user_agent = original;
+  });
+
+  it("keeps yarn for Yarn 1, which still has `yarn global`", () => {
+    process.env.npm_config_user_agent = "yarn/1.22.22 npm/? node/v20.19.0 linux x64";
+    expect(detectGlobalPackageManager()).toBe("yarn");
+  });
+
+  it("falls back to npm for Yarn 2+, which removed `yarn global`", () => {
+    process.env.npm_config_user_agent = "yarn/4.18.1 npm/? node/v22.0.0 linux x64";
+    expect(detectGlobalPackageManager()).toBe("npm");
+    process.env.npm_config_user_agent = "yarn/2.4.3 npm/? node/v20.19.0 darwin arm64";
+    expect(detectGlobalPackageManager()).toBe("npm");
+  });
+
+  it("passes other agents through unchanged", () => {
+    delete process.env.npm_config_user_agent;
+    expect(detectGlobalPackageManager()).toBe("npm");
+    process.env.npm_config_user_agent = "pnpm/9.0.0";
+    expect(detectGlobalPackageManager()).toBe("pnpm");
+    process.env.npm_config_user_agent = "bun/1.0.0";
+    expect(detectGlobalPackageManager()).toBe("bun");
   });
 });
 

@@ -6,6 +6,7 @@ import {
   getInstalledVersion,
   getGloballyInstalledVersion,
   detectPackageManager,
+  detectGlobalPackageManager,
   globalInstallCommand,
   formatShellCommand,
 } from "../src/utils.js";
@@ -55,6 +56,20 @@ describe("update — install command generation", () => {
     const cmdStr = formatShellCommand(cmd);
     expect(cmdStr).toContain("pnpm add -g");
     expect(cmdStr).toContain(PACKAGE_NAME);
+  });
+
+  it("generates yarn global update command under Yarn 1", () => {
+    process.env.npm_config_user_agent = "yarn/1.22.22 npm/? node/v20.19.0 linux x64";
+    const pm = detectGlobalPackageManager();
+    const cmd = globalInstallCommand(pm, `${PACKAGE_NAME}@1.0.0`);
+    expect(formatShellCommand(cmd)).toBe(`yarn global add ${PACKAGE_NAME}@1.0.0`);
+  });
+
+  it("generates npm update command under Yarn 2+, which has no `yarn global`", () => {
+    process.env.npm_config_user_agent = "yarn/4.18.1 npm/? node/v22.0.0 linux x64";
+    const pm = detectGlobalPackageManager();
+    const cmd = globalInstallCommand(pm, `${PACKAGE_NAME}@1.0.0`);
+    expect(formatShellCommand(cmd)).toBe(`npm install -g ${PACKAGE_NAME}@1.0.0`);
   });
 });
 

@@ -28,6 +28,18 @@ export function detectPackageManager(): PackageManager {
   return "npm";
 }
 
+// The package manager for the GLOBAL install. Yarn 2+ removed `yarn global`
+// and has no replacement that puts a package on PATH, so under a `yarn dlx`
+// launched by Yarn 2+ the global install and uninstall go through npm. Yarn 1
+// keeps `yarn global add|remove`, and the local commands are unaffected: Yarn
+// 2+ still has `yarn add` and `yarn remove`.
+export function detectGlobalPackageManager(): PackageManager {
+  const pm = detectPackageManager();
+  if (pm !== "yarn") return pm;
+  const major = /^yarn\/(\d+)/.exec(process.env.npm_config_user_agent ?? "")?.[1];
+  return major !== undefined && Number(major) >= 2 ? "npm" : "yarn";
+}
+
 function asKnownPm(name: unknown): PackageManager | null {
   return name === "npm" || name === "yarn" || name === "pnpm" || name === "bun" ? name : null;
 }
